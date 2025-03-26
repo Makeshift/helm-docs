@@ -50,6 +50,8 @@ jobs:
       - name: Push snapshot images
         run: |
           docker push ghcr.io/makeshift/helm-docs --all-tags
+          docker manifest create ghcr.io/makeshift/helm-docs:snapshot $(docker images ghcr.io/makeshift/helm-docs --format "{{.Repository}}:{{.Tag}}")
+          docker manifest push ghcr.io/makeshift/helm-docs:snapshot
 
       - name: Cleanup
         if: always()
