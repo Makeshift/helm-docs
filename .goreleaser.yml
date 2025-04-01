@@ -46,8 +46,8 @@ signs:
 
 nfpms:
 - vendor: helm-docs
-  homepage: https://github.com/norwoodj/helm-docs
-  maintainer: norwoodj
+  homepage: https://github.com/makeshift/helm-docs
+  maintainer: makeshift
   description: A tool for automatically generating markdown documentation for helm charts
   license: GPL-3.0-or-later
   formats:
@@ -64,10 +64,10 @@ nfpms:
 
 brews:
   - repository:
-      owner: norwoodj
+      owner: makeshift
       name: homebrew
     directory: Formula
-    homepage: https://github.com/norwoodj/helm-docs
+    homepage: https://github.com/makeshift/helm-docs
     description: Automatically generate markdown documentation for helm charts
     install: |
       bin.install "helm-docs"

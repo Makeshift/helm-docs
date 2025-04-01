@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+permissions:
+  packages: write
+  contents: write
+
 jobs:
   release:
     name: Release
@@ -29,29 +33,17 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Login to DockerHub
-        if: ${{ !env.ACT }}
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+      - name: Login to GHCR.io
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-      - name: Import GPG key
-        if: ${{ !env.ACT }}
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
-        with:
-          gpg_private_key: ${{ secrets.SIGNING_KEY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
 
       - name: Release Helm-Docs
         if: ${{ !env.ACT }}
         uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6.0.0
         env:
-          GITHUB_TOKEN: ${{ secrets.NORWOODJ_ORG_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: release
-
-      - name: Cleanup
-        if: always()
-        run: rm -f ${HOME}/.docker/config.json

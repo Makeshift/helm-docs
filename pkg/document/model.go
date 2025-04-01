@@ -189,6 +189,8 @@ func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion stri
 					}
 					row.IsGlobal = true
 					seenGlobalKeys[row.Key] = true
+				} else if dep.Prefix == "" {
+					// No prefix, so just use the key as is.
 				} else {
 					row.Key = dep.Prefix + "." + row.Key
 				}

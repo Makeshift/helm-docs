@@ -49,7 +49,16 @@ func getDependencyValuesWithPrefix(root helm.ChartDocumentationInfo, allChartInf
 		if alias == "" {
 			alias = dep.Name
 		}
-		depPrefix := prefix + alias
+
+		depPrefix := prefix
+		depPrefixDelimited := prefix
+		if depInfo.Type == "library" {
+			log.Debugf("Dependency %q is a library chart, merging into parent with prefix %q", alias, depPrefix)
+		} else {
+			depPrefix = prefix + alias
+			depPrefixDelimited = depPrefix + "."
+			log.Debugf("Dependency %q is a normal chart, prefixing with %q", alias, depPrefix)
+		}
 
 		result = append(result, DependencyValues{
 			Prefix:                  depPrefix,
@@ -57,7 +66,7 @@ func getDependencyValuesWithPrefix(root helm.ChartDocumentationInfo, allChartInf
 			ChartValuesDescriptions: depInfo.ChartValuesDescriptions,
 		})
 
-		children, err := getDependencyValuesWithPrefix(depInfo, allChartInfoByChartPath, depPrefix+".")
+		children, err := getDependencyValuesWithPrefix(depInfo, allChartInfoByChartPath, depPrefixDelimited)
 		if err != nil {
 			return nil, err
 		}
