@@ -40,10 +40,6 @@ changelog:
       - "^docs:"
       - "^test:"
 
-signs:
-- artifacts: checksum
-  args: [ '{{ if index .Env "GPG_FINGERPRINT"  }}-u {{ .Env.GPG_FINGERPRINT }}{{ else }}-s{{ end }}', "--output", "${signature}","--detach-sign", "${artifact}"]
-
 nfpms:
 - vendor: helm-docs
   homepage: https://github.com/makeshift/helm-docs
