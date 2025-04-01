@@ -40,35 +40,6 @@ changelog:
       - "^docs:"
       - "^test:"
 
-nfpms:
-- vendor: helm-docs
-  homepage: https://github.com/makeshift/helm-docs
-  maintainer: makeshift
-  description: A tool for automatically generating markdown documentation for helm charts
-  license: GPL-3.0-or-later
-  formats:
-  - deb
-  - rpm
-  file_name_template: >-
-    {{ .ProjectName }}_
-    {{- .Version}}_
-    {{- title .Os }}_
-    {{- if eq .Arch "amd64" }}x86_64
-    {{- else if eq .Arch "386" }}i386
-    {{- else if eq .Arch "arm" }}{{ .Arch }}{{ .Arm }}
-    {{- else }}{{ .Arch }}{{ end }}
-
-brews:
-  - repository:
-      owner: makeshift
-      name: homebrew
-    directory: Formula
-    homepage: https://github.com/makeshift/helm-docs
-    description: Automatically generate markdown documentation for helm charts
-    install: |
-      bin.install "helm-docs"
-    test: |
-      system "#{bin}/helm-docs --version"
 dockers:
   - goos: linux
     goarch: amd64
