@@ -11,6 +11,7 @@ import (
 )
 
 type DependencyValues struct {
+	ChartName 					    string
 	Prefix                  string
 	ChartValues             *yaml.Node
 	ChartValuesDescriptions map[string]helm.ChartValueDescription
@@ -49,8 +50,12 @@ func getDependencyValuesWithPrefix(root helm.ChartDocumentationInfo, allChartInf
 
 		depPrefix := prefix
 		depPrefixDelimited := prefix
+		// chartValues := depInfo.ChartValues
+		// chartValuesDescriptions := depInfo.ChartValuesDescriptions
+
 		if depInfo.Type == "library" {
 			log.Debugf("Dependency %q is a library chart, merging into parent with prefix %q", alias, depPrefix)
+			// Library charts are merged into the parent chart, so we don't need to prefix them.
 		} else {
 			depPrefix = prefix + alias
 			depPrefixDelimited = depPrefix + "."
@@ -58,6 +63,7 @@ func getDependencyValuesWithPrefix(root helm.ChartDocumentationInfo, allChartInf
 		}
 
 		result = append(result, DependencyValues{
+			ChartName:							 dep.Name,
 			Prefix:                  depPrefix,
 			ChartValues:             depInfo.ChartValues,
 			ChartValuesDescriptions: depInfo.ChartValuesDescriptions,

@@ -168,37 +168,110 @@ func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion stri
 	}
 
 	if len(dependencyValues) > 0 {
-		seenGlobalKeys := make(map[string]bool)
-		for i, row := range valuesTableRows {
-			if strings.HasPrefix(row.Key, "global.") {
-				valuesTableRows[i].IsGlobal = true
-				seenGlobalKeys[row.Key] = true
-			}
-		}
-
-		for _, dep := range dependencyValues {
-			depValuesTableRows, err := getUnsortedValueRows(dep.ChartValues, dep.ChartValuesDescriptions)
-			if err != nil {
-				return chartTemplateData{}, err
-			}
-
-			for _, row := range depValuesTableRows {
-				if row.Key == "global" || strings.HasPrefix(row.Key, "global.") {
-					if seenGlobalKeys[row.Key] {
-						continue
+			seenGlobalKeys := make(map[string]bool)
+			// Create a map of keys to their indices in valuesTableRows
+			existingKeyIndices := make(map[string]int)
+			for i, row := range valuesTableRows {
+					if strings.HasPrefix(row.Key, "global.") {
+							valuesTableRows[i].IsGlobal = true
+							seenGlobalKeys[row.Key] = true
 					}
-					row.IsGlobal = true
-					seenGlobalKeys[row.Key] = true
-				} else if dep.Prefix == "" {
-					// No prefix, so just use the key as is.
-				} else {
-					row.Key = dep.Prefix + "." + row.Key
-				}
-
-				row.Dependency = dep.Prefix
-				valuesTableRows = append(valuesTableRows, row)
+					// Store the index of each key for fast lookup
+					existingKeyIndices[row.Key] = i
 			}
-		}
+
+			for _, dep := range dependencyValues {
+					depValuesTableRows, err := getUnsortedValueRows(dep.ChartValues, dep.ChartValuesDescriptions)
+					if err != nil {
+							return chartTemplateData{}, err
+					}
+
+					// Does this dependency have any import-values mappings in the parent?
+					// TODO: doesn't handle aliases
+					var importValues *[]helm.ChartRequirementsImportValue
+					for i, dependency := range info.ChartRequirements.Dependencies {
+							if dependency.Name == dep.ChartName && len(info.ChartRequirements.Dependencies[i].ImportValues) > 0 {
+									importValues = &info.ChartRequirements.Dependencies[i].ImportValues
+									break
+							}
+					}
+
+					for _, row := range depValuesTableRows {
+							if row.Key == "global" || strings.HasPrefix(row.Key, "global.") {
+									if seenGlobalKeys[row.Key] {
+											continue
+									}
+									row.IsGlobal = true
+									seenGlobalKeys[row.Key] = true
+							} else if dep.Prefix == "" {
+									// No prefix, so just use the key as is.
+							} else {
+									row.Key = dep.Prefix + "." + row.Key
+							}
+
+							row.Dependency = dep.Prefix
+
+							if importValues != nil {
+								// Check if the key begins with the import value prefix
+								for _, importValue := range *importValues {
+									if strings.HasPrefix(row.Key, importValue.Child) {
+										var newKey string
+										var bareValue string = strings.TrimPrefix(row.Key, importValue.Child)
+										if importValue.Parent == "." {
+											newKey = strings.TrimPrefix(bareValue, ".")
+										} else {
+											newKey = importValue.Parent + bareValue
+										}
+										log.Debugf("Rewriting key %s to %s", row.Key, newKey)
+										row.Key = newKey
+									}
+								}
+							}
+
+							// If it's an export, presume we've imported it and so should remove the exports. prefix
+							row.Key = strings.TrimPrefix(row.Key, "exports.")
+
+							// Check if we already have a row with the same key
+							if existingIndex, exists := existingKeyIndices[row.Key]; exists {
+									// If the key already exists, see if we should update the existing row
+									// The most common use-case for this is going to be a parent chart that simply sets
+									//  a different default value for an imported value, so all other fields should be the same
+									//  as the original row.
+									existingRow := &valuesTableRows[existingIndex]
+
+									// If the description is empty in the existing row, update it with the new row's description
+									if existingRow.Description == "" && row.Description != "" {
+										existingRow.Description = row.Description
+									}
+									if existingRow.AutoDescription == "" && row.AutoDescription != "" {
+										existingRow.AutoDescription = row.AutoDescription
+									}
+									// If the type is different, update it with the new row's type
+									if existingRow.Type != row.Type {
+										existingRow.Type = row.Type
+									}
+									// If the default is empty in the existing row, update it with the new row's default
+									if existingRow.Default == "" && row.Default != "" {
+										existingRow.Default = row.Default
+									}
+									if existingRow.AutoDefault == "" && row.AutoDefault != "" {
+										existingRow.AutoDefault = row.AutoDefault
+									}
+									if existingRow.NotationType == "" && row.NotationType != "" {
+										existingRow.NotationType = row.NotationType
+									}
+									if existingRow.Section == "" && row.Section != "" {
+										existingRow.Section = row.Section
+									}
+
+									continue // Skip adding this as a new row since we updated the existing one
+							}
+
+							// Key doesn't exist, add the new row and update the index map
+							valuesTableRows = append(valuesTableRows, row)
+							existingKeyIndices[row.Key] = len(valuesTableRows) - 1
+					}
+			}
 	}
 
 	sortValueRows(valuesTableRows)

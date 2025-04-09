@@ -44,11 +44,17 @@ type ChartMeta struct {
 	Maintainers []ChartMetaMaintainer
 }
 
+type ChartRequirementsImportValue struct {
+	Child      string
+	Parent     string
+}
+
 type ChartRequirementsItem struct {
 	Name       string
 	Version    string
 	Repository string
 	Alias      string
+	ImportValues []ChartRequirementsImportValue `yaml:"import-values"`
 }
 
 type ChartRequirements struct {
@@ -278,7 +284,7 @@ func parseChartValuesFileComments(chartDirectory string, values *yaml.Node, lint
 		sectionCommentMatch := sectionRegex.FindStringSubmatch(currentLine)
 		commentContinuationMatch := commentContinuationRegex.FindStringSubmatch(currentLine)
 
-		if len(defaultCommentMatch) > 1 || len(sectionCommentMatch) > 1 || len(commentContinuationMatch) > 1 {
+		if len(defaultCommentMatch) > 1 || len(sectionCommentMatch) > 1 || len(commentContinuationMatch) > 1{
 			commentLines = append(commentLines, currentLine)
 			continue
 		}
