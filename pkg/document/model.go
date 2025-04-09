@@ -213,6 +213,7 @@ func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion stri
 
 							if importValues != nil {
 								// Check if the key begins with the import value prefix
+								var rewritten bool
 								for _, importValue := range *importValues {
 									if strings.HasPrefix(row.Key, importValue.Child) {
 										var newKey string
@@ -224,7 +225,14 @@ func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion stri
 										}
 										log.Debugf("Rewriting key %s to %s", row.Key, newKey)
 										row.Key = newKey
+										rewritten = true
+										break;
 									}
+								}
+								// If the key was not rewritten and it starts with "exports.", skip it
+								if !rewritten && strings.HasPrefix(row.Key, "exports.") {
+									log.Debugf("No import value found for key %s in dependency %s which has import-values, skipping", row.Key, dep.ChartName)
+									continue
 								}
 							}
 
