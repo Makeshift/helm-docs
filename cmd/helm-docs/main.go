@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 
@@ -85,9 +86,58 @@ func readDocumentationInfoByChartPath(chartSearchRoot string, parallelism int) (
 		fullChartSearchRoot = filepath.Join(cwd, chartSearchRoot)
 	}
 
+
+
 	chartDirs, err := helm.FindChartDirectories(fullChartSearchRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error finding chart directories: %w", err)
+	}
+	
+	buildDeps := viper.GetBool("build-dependencies")
+	if buildDeps {
+		for _, dir := range chartDirs {
+			possibleParentCharts := strings.Split(dir, string(os.PathSeparator) + "charts" + string(os.PathSeparator))
+			possibleParentCharts = possibleParentCharts[:len(possibleParentCharts)-1]
+			isChildChart := false
+			for _, possibleParentChart := range possibleParentCharts {
+				if slices.Contains(chartDirs, possibleParentChart) {
+					isChildChart = true
+					break
+				}
+			}
+			if isChildChart {
+				continue
+			}
+			log.Warnf("Building dependencies for chart %s", possibleParentCharts)
+			err := helm.BuildChartDependencies(path.Join(fullChartSearchRoot, dir))
+			if err != nil {
+				log.Warnf("Error building chart dependencies for %s: %v", dir, err)
+			}
+		}
+	}
+	
+	extractDeps := viper.GetBool("extract-dependencies")
+	if extractDeps {
+		extractions := 0
+		for ok := true; ok; ok = (extractions > 0) {
+			extractions = 0
+			log.Info("Checking for unextracted dependencies...")
+			for _, dir := range chartDirs {
+				didExtraction, err := helm.ExtractChartDependencies(path.Join(fullChartSearchRoot, dir))
+				if err != nil {
+					log.Warnf("Error extracting chart dependencies: %v", err)
+				}
+				if didExtraction {
+					extractions++
+				}
+			}
+			if extractions > 0 {
+				chartDirs, err = helm.FindChartDirectories(fullChartSearchRoot)
+				if err != nil {
+					return nil, fmt.Errorf("error re-finding chart directories after extraction: %w", err)
+				}
+			}
+		}
 	}
 
 	log.Infof("Found Chart directories [%s]", strings.Join(chartDirs, ", "))

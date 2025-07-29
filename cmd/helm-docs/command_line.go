@@ -61,6 +61,8 @@ func newHelmDocsCommand(run func(cmd *cobra.Command, args []string)) (*cobra.Com
 	command.PersistentFlags().StringSliceP("documentation-strict-ignore-absent", "y", []string{"service.type", "image.repository", "image.tag"}, "A comma separate values which are allowed not to be documented in strict mode")
 	command.PersistentFlags().StringSliceP("documentation-strict-ignore-absent-regex", "z", []string{".*service\\.type", ".*image\\.repository", ".*image\\.tag"}, "A comma separate values which are allowed not to be documented in strict mode")
 	command.PersistentFlags().Bool("skip-version-footer", false, "if true the helm-docs version footer will not be shown in the default README template")
+	command.PersistentFlags().Bool("extract-dependencies", false, "automatically extract .tgz chart dependencies in charts/ directories before generating documentation")
+	command.PersistentFlags().Bool("build-dependencies", false, "automatically run `helm dependency build` on each chart before generating documentation")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("HELM_DOCS")
