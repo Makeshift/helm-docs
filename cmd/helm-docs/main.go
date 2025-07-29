@@ -149,7 +149,8 @@ func writeDocumentation(chartSearchRoot string, documentationInfoByChartPath map
 
 	log.Debugf("Rendering from optional template files [%s]", strings.Join(templateFiles, ", "))
 
-	documentDependencyValues := viper.GetBool("document-dependency-values")
+	documentDependencyValues := viper.GetBool("document-dependency-values") || viper.GetBool("only-document-dependency-values")
+	onlyDocumentDependencyValues := viper.GetBool("only-document-dependency-values")
 	documentationInfoToGenerate := getChartToGenerate(documentationInfoByChartPath)
 
 	parallelProcessIterable(documentationInfoToGenerate, parallelism, func(elem interface{}) {
@@ -163,7 +164,7 @@ func writeDocumentation(chartSearchRoot string, documentationInfoByChartPath map
 				return
 			}
 		}
-		document.PrintDocumentation(info, chartSearchRoot, templateFiles, dryRun, version, badgeStyle, dependencyValues, skipVersionFooter)
+		document.PrintDocumentation(info, chartSearchRoot, templateFiles, dryRun, version, badgeStyle, dependencyValues, skipVersionFooter, onlyDocumentDependencyValues)
 	})
 }
 

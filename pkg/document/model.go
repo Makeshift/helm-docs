@@ -157,14 +157,20 @@ func getSectionedValueRows(valueRows []valueRow) sections {
 	return valueRowsSectionSorted
 }
 
-func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion string, dependencyValues []DependencyValues, skipVersionFooter bool) (chartTemplateData, error) {
-	valuesTableRows, err := getUnsortedValueRows(info.ChartValues, info.ChartValuesDescriptions)
-	if err != nil {
-		return chartTemplateData{}, err
-	}
+func getChartTemplateData(info helm.ChartDocumentationInfo, helmDocsVersion string, dependencyValues []DependencyValues, skipVersionFooter bool, onlyDocumentDependencyValues bool) (chartTemplateData, error) {
+	valuesTableRows := make([]valueRow, 0)
+	var err error
 
-	if viper.GetBool("ignore-non-descriptions") {
-		valuesTableRows = removeRowsWithoutDescription(valuesTableRows)
+	// Only include the chart's own values if not onlyDocumentDependencyValues
+	if !onlyDocumentDependencyValues {
+		valuesTableRows, err = getUnsortedValueRows(info.ChartValues, info.ChartValuesDescriptions)
+		if err != nil {
+			return chartTemplateData{}, err
+		}
+
+		if viper.GetBool("ignore-non-descriptions") {
+			valuesTableRows = removeRowsWithoutDescription(valuesTableRows)
+		}
 	}
 
 	if len(dependencyValues) > 0 {
